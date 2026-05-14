@@ -1,0 +1,18 @@
+all rates should be added
+client number with all service
+client all service with name and contact only 
+all client should be visible from main dashboard 
+and also all service of client should be listed in the view
+discount system with percent 
+history 
+client should get discount if needed
+products 
+due amount should be there 
+expenses should be added 
+gift card should be there and history should be there also
+client should get the message of bill 
+reminder should also  be there 
+settlement 
+bridal and groom package 
+barber salary : monthly + INSENTIVES (5% if 50k and 7 % if 75k 10 %if 100k 12% if 150k 15 % 200K)
+OVERTIME BASED ON ARRIVAL TIME
