@@ -12,10 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppStaffRouteImport } from './routes/_app.staff'
 import { Route as AppServicesRouteImport } from './routes/_app.services'
+import { Route as AppProductsRouteImport } from './routes/_app.products'
+import { Route as AppGiftCardsRouteImport } from './routes/_app.gift-cards'
+import { Route as AppExpensesRouteImport } from './routes/_app.expenses'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppClientsRouteImport } from './routes/_app.clients'
+import { Route as AppBillsIndexRouteImport } from './routes/_app.bills.index'
 import { Route as AppClientsIdRouteImport } from './routes/_app.clients.$id'
+import { Route as AppBillsIdRouteImport } from './routes/_app.bills.$id'
+import { Route as AppBillingNewRouteImport } from './routes/_app.billing.new'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -31,9 +38,29 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppStaffRoute = AppStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppServicesRoute = AppServicesRouteImport.update({
   id: '/services',
   path: '/services',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProductsRoute = AppProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGiftCardsRoute = AppGiftCardsRouteImport.update({
+  id: '/gift-cards',
+  path: '/gift-cards',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppExpensesRoute = AppExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -46,10 +73,25 @@ const AppClientsRoute = AppClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBillsIndexRoute = AppBillsIndexRouteImport.update({
+  id: '/bills/',
+  path: '/bills/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppClientsIdRoute = AppClientsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => AppClientsRoute,
+} as any)
+const AppBillsIdRoute = AppBillsIdRouteImport.update({
+  id: '/bills/$id',
+  path: '/bills/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBillingNewRoute = AppBillingNewRouteImport.update({
+  id: '/billing/new',
+  path: '/billing/new',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -57,16 +99,30 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/clients': typeof AppClientsRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
+  '/expenses': typeof AppExpensesRoute
+  '/gift-cards': typeof AppGiftCardsRoute
+  '/products': typeof AppProductsRoute
   '/services': typeof AppServicesRoute
+  '/staff': typeof AppStaffRoute
+  '/billing/new': typeof AppBillingNewRoute
+  '/bills/$id': typeof AppBillsIdRoute
   '/clients/$id': typeof AppClientsIdRoute
+  '/bills/': typeof AppBillsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/clients': typeof AppClientsRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
+  '/expenses': typeof AppExpensesRoute
+  '/gift-cards': typeof AppGiftCardsRoute
+  '/products': typeof AppProductsRoute
   '/services': typeof AppServicesRoute
+  '/staff': typeof AppStaffRoute
+  '/billing/new': typeof AppBillingNewRoute
+  '/bills/$id': typeof AppBillsIdRoute
   '/clients/$id': typeof AppClientsIdRoute
+  '/bills': typeof AppBillsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -75,8 +131,15 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/clients': typeof AppClientsRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/expenses': typeof AppExpensesRoute
+  '/_app/gift-cards': typeof AppGiftCardsRoute
+  '/_app/products': typeof AppProductsRoute
   '/_app/services': typeof AppServicesRoute
+  '/_app/staff': typeof AppStaffRoute
+  '/_app/billing/new': typeof AppBillingNewRoute
+  '/_app/bills/$id': typeof AppBillsIdRoute
   '/_app/clients/$id': typeof AppClientsIdRoute
+  '/_app/bills/': typeof AppBillsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -85,10 +148,30 @@ export interface FileRouteTypes {
     | '/login'
     | '/clients'
     | '/dashboard'
+    | '/expenses'
+    | '/gift-cards'
+    | '/products'
     | '/services'
+    | '/staff'
+    | '/billing/new'
+    | '/bills/$id'
     | '/clients/$id'
+    | '/bills/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/clients' | '/dashboard' | '/services' | '/clients/$id'
+  to:
+    | '/'
+    | '/login'
+    | '/clients'
+    | '/dashboard'
+    | '/expenses'
+    | '/gift-cards'
+    | '/products'
+    | '/services'
+    | '/staff'
+    | '/billing/new'
+    | '/bills/$id'
+    | '/clients/$id'
+    | '/bills'
   id:
     | '__root__'
     | '/'
@@ -96,8 +179,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/clients'
     | '/_app/dashboard'
+    | '/_app/expenses'
+    | '/_app/gift-cards'
+    | '/_app/products'
     | '/_app/services'
+    | '/_app/staff'
+    | '/_app/billing/new'
+    | '/_app/bills/$id'
     | '/_app/clients/$id'
+    | '/_app/bills/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -129,11 +219,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/staff': {
+      id: '/_app/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof AppStaffRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/services': {
       id: '/_app/services'
       path: '/services'
       fullPath: '/services'
       preLoaderRoute: typeof AppServicesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/products': {
+      id: '/_app/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof AppProductsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/gift-cards': {
+      id: '/_app/gift-cards'
+      path: '/gift-cards'
+      fullPath: '/gift-cards'
+      preLoaderRoute: typeof AppGiftCardsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/expenses': {
+      id: '/_app/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof AppExpensesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/dashboard': {
@@ -150,12 +268,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClientsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/bills/': {
+      id: '/_app/bills/'
+      path: '/bills'
+      fullPath: '/bills/'
+      preLoaderRoute: typeof AppBillsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/clients/$id': {
       id: '/_app/clients/$id'
       path: '/$id'
       fullPath: '/clients/$id'
       preLoaderRoute: typeof AppClientsIdRouteImport
       parentRoute: typeof AppClientsRoute
+    }
+    '/_app/bills/$id': {
+      id: '/_app/bills/$id'
+      path: '/bills/$id'
+      fullPath: '/bills/$id'
+      preLoaderRoute: typeof AppBillsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/billing/new': {
+      id: '/_app/billing/new'
+      path: '/billing/new'
+      fullPath: '/billing/new'
+      preLoaderRoute: typeof AppBillingNewRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
@@ -175,13 +314,27 @@ const AppClientsRouteWithChildren = AppClientsRoute._addFileChildren(
 interface AppRouteChildren {
   AppClientsRoute: typeof AppClientsRouteWithChildren
   AppDashboardRoute: typeof AppDashboardRoute
+  AppExpensesRoute: typeof AppExpensesRoute
+  AppGiftCardsRoute: typeof AppGiftCardsRoute
+  AppProductsRoute: typeof AppProductsRoute
   AppServicesRoute: typeof AppServicesRoute
+  AppStaffRoute: typeof AppStaffRoute
+  AppBillingNewRoute: typeof AppBillingNewRoute
+  AppBillsIdRoute: typeof AppBillsIdRoute
+  AppBillsIndexRoute: typeof AppBillsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppClientsRoute: AppClientsRouteWithChildren,
   AppDashboardRoute: AppDashboardRoute,
+  AppExpensesRoute: AppExpensesRoute,
+  AppGiftCardsRoute: AppGiftCardsRoute,
+  AppProductsRoute: AppProductsRoute,
   AppServicesRoute: AppServicesRoute,
+  AppStaffRoute: AppStaffRoute,
+  AppBillingNewRoute: AppBillingNewRoute,
+  AppBillsIdRoute: AppBillsIdRoute,
+  AppBillsIndexRoute: AppBillsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
