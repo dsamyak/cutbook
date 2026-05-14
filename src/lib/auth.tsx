@@ -2,16 +2,20 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
-type Role = "admin" | "barber";
+export type Role = "admin" | "owner" | "barber";
 
 interface AuthCtx {
   session: Session | null;
   user: User | null;
   roles: Role[];
   isAdmin: boolean;
+  isOwner: boolean;
+  isBarber: boolean;
+  /** admin OR owner — can access most management features */
+  canManage: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
+  signInWithOtp: (email: string) => Promise<{ error?: string }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -44,21 +48,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles((data ?? []).map((r) => r.role as Role));
   }
 
+  const isAdmin = roles.includes("admin");
+  const isOwner = roles.includes("owner");
+  const isBarber = roles.includes("barber");
+
   const value: AuthCtx = {
     session,
     user: session?.user ?? null,
     roles,
-    isAdmin: roles.includes("admin"),
+    isAdmin,
+    isOwner,
+    isBarber,
+    canManage: isAdmin || isOwner,
     loading,
-    async signIn(email, password) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+    async signInWithOtp(email) {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true },
+      });
       return { error: error?.message };
     },
-    async signUp(email, password, fullName) {
-      const { error } = await supabase.auth.signUp({
+    async verifyOtp(email, token) {
+      const { error } = await supabase.auth.verifyOtp({
         email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/`, data: { full_name: fullName } },
+        token,
+        type: "email",
       });
       return { error: error?.message };
     },
