@@ -16,7 +16,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-import { Plus, Shield, ShieldCheck, Scissors, UserPlus, Trash2, Search } from "lucide-react";
+import {
+  Plus, Shield, ShieldCheck, Scissors, UserPlus, Search,
+  Copy, Check, RefreshCw, Users, Loader2,
+} from "lucide-react";
 import { useAuth, type Role } from "@/lib/auth";
 import { toast } from "sonner";
 
@@ -43,7 +46,16 @@ function AdminPage() {
           <h1 className="text-2xl font-bold tracking-tight">Admin Panel</h1>
           <p className="text-sm text-muted-foreground">Manage users and their roles</p>
         </div>
-        <InviteUserDialog onCreated={() => qc.invalidateQueries({ queryKey: ["admin-users"] })} />
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
+          >
+            <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+          </Button>
+          <InviteUserDialog onCreated={() => qc.invalidateQueries({ queryKey: ["admin-users"] })} />
+        </div>
       </div>
       <UsersTable />
     </div>
@@ -54,7 +66,7 @@ function UsersTable() {
   const [q, setQ] = useState("");
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
       // Get all profiles
@@ -76,6 +88,8 @@ function UsersTable() {
         roles: (roles ?? []).filter((r) => r.user_id === p.id),
       }));
     },
+    staleTime: 10_000,
+    retry: 2,
   });
 
   const filtered = (data ?? []).filter((u) => {
@@ -123,10 +137,29 @@ function UsersTable() {
       </Card>
 
       <Card>
-        {isLoading ? (
-          <div className="p-6 text-muted-foreground">Loading…</div>
+        {error ? (
+          <div className="p-6 text-destructive text-center">
+            <p className="font-medium">Failed to load users</p>
+            <p className="text-sm text-muted-foreground mt-1">{(error as Error).message}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : isLoading ? (
+          <div className="p-6 text-muted-foreground flex items-center gap-2 justify-center">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading users…
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-muted-foreground">No users found.</div>
+          <div className="p-10 text-center text-muted-foreground">
+            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            No users found.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -161,13 +194,32 @@ function UsersTable() {
                           <span key={r.id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${roleBadgeClass(r.role)}`}>
                             {roleIcon(r.role)}
                             {r.role}
-                            <button
-                              className="ml-1 hover:text-destructive"
-                              onClick={() => removeRole(r.id)}
-                              title="Remove role"
-                            >
-                              ×
-                            </button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <button
+                                  className="ml-1 hover:text-destructive"
+                                  title="Remove role"
+                                >
+                                  ×
+                                </button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove Role</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to remove the <strong>{r.role}</strong> role
+                                    from <strong>{u.full_name}</strong>? They will lose access to
+                                    features associated with this role.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => removeRole(r.id)}>
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </span>
                         ))}
                       </div>
@@ -189,6 +241,26 @@ function UsersTable() {
           </div>
         )}
       </Card>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="p-3 text-center">
+          <div className="text-2xl font-bold">{data?.length ?? 0}</div>
+          <div className="text-xs text-muted-foreground">Total Users</div>
+        </Card>
+        <Card className="p-3 text-center">
+          <div className="text-2xl font-bold">
+            {(data ?? []).filter((u) => u.roles.some((r: any) => r.role === "admin" || r.role === "owner")).length}
+          </div>
+          <div className="text-xs text-muted-foreground">Managers</div>
+        </Card>
+        <Card className="p-3 text-center">
+          <div className="text-2xl font-bold">
+            {(data ?? []).filter((u) => u.roles.length === 0).length}
+          </div>
+          <div className="text-xs text-muted-foreground">Pending Role</div>
+        </Card>
+      </div>
 
       {/* Role Legend */}
       <Card className="p-4">
@@ -266,31 +338,18 @@ function AddRoleDropdown({
 
 function InviteUserDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<Role>("owner");
+  const [copied, setCopied] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) return toast.error("Enter an email");
-    setBusy(true);
+  const signUpUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/login`
+    : "/login";
 
-    // Send OTP invite — this creates the user in Supabase Auth if they don't exist
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
+  function copyLink() {
+    navigator.clipboard.writeText(signUpUrl).then(() => {
+      setCopied(true);
+      toast.success("Sign-up link copied!");
+      setTimeout(() => setCopied(false), 2000);
     });
-
-    if (error) {
-      setBusy(false);
-      return toast.error(error.message);
-    }
-
-    toast.success(`Invite sent to ${email}. They'll receive an OTP to log in. After they sign in, assign their role from this panel.`);
-    setBusy(false);
-    setOpen(false);
-    setEmail("");
-    onCreated();
   }
 
   return (
@@ -304,24 +363,73 @@ function InviteUserDialog({ onCreated }: { onCreated: () => void }) {
         <DialogHeader>
           <DialogTitle>Invite User</DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Send an OTP login invite. After they sign in, come back here to assign their role.
+            To add a new user to CutBook:
           </p>
-          <div>
-            <Label>Email *</Label>
-            <Input
-              type="email"
-              required
-              placeholder="user@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                1
+              </div>
+              <div>
+                <p className="text-sm font-medium">Share the sign-up link</p>
+                <p className="text-xs text-muted-foreground">
+                  Send them this link so they can create their account with email & password.
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Input
+                    value={signUpUrl}
+                    readOnly
+                    className="text-xs h-8 bg-muted"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-2 flex-shrink-0"
+                    onClick={copyLink}
+                  >
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5 text-success" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                2
+              </div>
+              <div>
+                <p className="text-sm font-medium">Assign their role</p>
+                <p className="text-xs text-muted-foreground">
+                  After they sign up, they'll appear in the users table above. Assign them
+                  the appropriate role (Owner / Barber).
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                3
+              </div>
+              <div>
+                <p className="text-sm font-medium">They're ready!</p>
+                <p className="text-xs text-muted-foreground">
+                  Once a role is assigned, they can log in and access features based on their role.
+                </p>
+              </div>
+            </div>
           </div>
-          <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Sending…" : "Send Invite"}
+
+          <Button variant="outline" className="w-full" onClick={() => setOpen(false)}>
+            Done
           </Button>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
