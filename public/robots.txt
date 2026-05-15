@@ -1,0 +1,17 @@
+User-agent: *
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /billing
+Disallow: /bills
+Disallow: /clients
+Disallow: /staff
+Disallow: /expenses
+Disallow: /products
+Disallow: /gift-cards
+Disallow: /services
+
+# Only allow crawling of the login/landing page
+Allow: /
+Allow: /login
+
+Sitemap: https://cutbook.pages.dev/sitemap.xml

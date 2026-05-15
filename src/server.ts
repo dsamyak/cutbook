@@ -66,15 +66,88 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+// ─── Security Headers ────────────────────────────────────────────────────────
+// Applied programmatically to ALL responses (SSR, API, static) at the edge.
+// These supplement the static `public/_headers` file which Cloudflare Pages
+// serves for static assets. Workers-served responses need them injected here.
+const SECURITY_HEADERS: Record<string, string> = {
+  "X-Frame-Options": "DENY",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "X-XSS-Protection": "1; mode=block",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+  "Cross-Origin-Opener-Policy": "same-origin",
+};
+
+function applySecurityHeaders(response: Response): Response {
+  const newHeaders = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    if (!newHeaders.has(key)) {
+      newHeaders.set(key, value);
+    }
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
+  });
+}
+
+// ─── Request Validation ──────────────────────────────────────────────────────
+// Block obviously malicious or oversized requests before they hit the app.
+const MAX_URL_LENGTH = 4096;
+const MAX_BODY_SIZE = 2 * 1024 * 1024; // 2 MB
+
+function validateRequest(request: Request): Response | null {
+  // Block excessively long URLs (path traversal, injection attempts)
+  if (request.url.length > MAX_URL_LENGTH) {
+    return new Response("URI Too Long", { status: 414 });
+  }
+
+  // Block oversized request bodies
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > MAX_BODY_SIZE) {
+    return new Response("Payload Too Large", { status: 413 });
+  }
+
+  // Block requests with suspicious path patterns
+  const url = new URL(request.url);
+  const dangerousPatterns = [
+    /\.\.\//,           // Path traversal
+    /\/\.env/i,         // Env file probing
+    /\/\.git/i,         // Git directory probing
+    /\/wp-admin/i,      // WordPress scanner
+    /\/phpmy/i,         // phpMyAdmin scanner
+    /\/eval\(/i,        // Code injection
+    /\<script/i,        // XSS in URL
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(url.pathname) || pattern.test(url.search)) {
+      return new Response("Forbidden", { status: 403 });
+    }
+  }
+
+  return null; // Request is valid
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // ── Pre-flight validation ──────────────────────────────────────────
+      const blocked = validateRequest(request);
+      if (blocked) return applySecurityHeaders(blocked);
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+
+      // ── Apply security headers to every response ───────────────────────
+      return applySecurityHeaders(normalized);
     } catch (error) {
       console.error(error);
-      return brandedErrorResponse();
+      return applySecurityHeaders(brandedErrorResponse());
     }
   },
 };
