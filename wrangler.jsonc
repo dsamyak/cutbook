@@ -6,12 +6,6 @@
     "nodejs_compat"
   ],
   "main": "dist/server/server.js",
-  "observability": {
-    "logs": {
-      "enabled": false,
-      "invocation_logs": true
-    }
-  },
   "assets": {
     "directory": "dist/client"
   }
