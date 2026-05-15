@@ -8,13 +8,19 @@ interface EnvConfig {
   supabaseAnonKey: string;
 }
 
+function getEnvVar(viteKey: string, nodeKey: string): string {
+  if (import.meta.env && import.meta.env[viteKey]) {
+    return import.meta.env[viteKey] as string;
+  }
+  if (typeof process !== 'undefined' && process.env && process.env[nodeKey]) {
+    return process.env[nodeKey] as string;
+  }
+  return "";
+}
+
 function validateEnv(): EnvConfig {
-  const supabaseUrl =
-    import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
-  const supabaseAnonKey =
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    "";
+  const supabaseUrl = getEnvVar("VITE_SUPABASE_URL", "SUPABASE_URL");
+  const supabaseAnonKey = getEnvVar("VITE_SUPABASE_PUBLISHABLE_KEY", "SUPABASE_PUBLISHABLE_KEY");
 
   const errors: string[] = [];
 
