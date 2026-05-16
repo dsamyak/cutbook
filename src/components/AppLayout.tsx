@@ -157,7 +157,7 @@ export function AppLayout() {
           </div>
           <div className="flex-1" />
           {canManage && (
-            <Link to="/billing/new">
+            <Link to="/billing/new" search={{ clientId: "" }}>
               <Button size="sm" className="gap-2">
                 <Plus className="h-4 w-4" /> New Bill
               </Button>

@@ -85,7 +85,7 @@ function Dashboard() {
         </div>
         <div className="flex gap-2">
           <Link to="/clients"><Button variant="outline" size="sm">Clients</Button></Link>
-          <Link to="/billing/new"><Button size="sm">New Bill</Button></Link>
+          <Link to="/billing/new" search={{ clientId: "" }}><Button size="sm">New Bill</Button></Link>
         </div>
       </div>
 
